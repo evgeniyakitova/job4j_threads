@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.URL;
 
 public class Wget implements Runnable {
+    private final int second = 1000;
+
     private final String url;
     private final int speed;
     private final String file;
@@ -22,15 +24,19 @@ public class Wget implements Runnable {
              FileOutputStream fileOutputStream = new FileOutputStream(file)) {
             byte[] dataBuffer = new byte[1024];
             int bytesRead;
-            long expectedTime = 1024 * 1000 / speed;
+            int downloadData = 0;
             long start = System.currentTimeMillis();
             while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                long time = System.currentTimeMillis() - start;
-                fileOutputStream.write(dataBuffer, 0, bytesRead);
-                if (expectedTime > time) {
-                    Thread.sleep(expectedTime - time);
+                downloadData += bytesRead;
+                if (downloadData >= speed) {
+                    long between = System.currentTimeMillis() - start;
+                    if (between < second) {
+                        Thread.sleep(second - between);
+                    }
+                    downloadData = 0;
+                    start = System.currentTimeMillis();
                 }
-                start = System.currentTimeMillis();
+                fileOutputStream.write(dataBuffer, 0, bytesRead);
             }
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
@@ -38,6 +44,9 @@ public class Wget implements Runnable {
     }
 
     public static void main(String[] args) {
+        if (args.length != 3) {
+            throw new IllegalArgumentException("Wrong number of arguments");
+        }
         String url = args[0];
         int speed = Integer.parseInt(args[1]);
         String file = args[2];
