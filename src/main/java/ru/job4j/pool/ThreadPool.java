@@ -14,7 +14,7 @@ public class ThreadPool {
         size = Runtime.getRuntime().availableProcessors();
         tasks = new SimpleBlockingQueue<>(size);
         for (int i = 0; i < size; i++) {
-            threads.add(new Thread(() -> {
+            Thread thread = new Thread(() -> {
                 Runnable task;
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
@@ -24,7 +24,9 @@ public class ThreadPool {
                         Thread.currentThread().interrupt();
                     }
                 }
-            }));
+            });
+            threads.add(thread);
+            thread.start();
         }
     }
 
@@ -34,5 +36,15 @@ public class ThreadPool {
 
     public void shutdown() {
         threads.forEach(Thread::interrupt);
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        ThreadPool pool = new ThreadPool();
+        for (int i = 0; i < 20; i++) {
+            int num = i;
+            pool.work(() -> System.out.println("Task is completed" + num));
+        }
+        Thread.sleep(3000);
+        pool.shutdown();
     }
 }
