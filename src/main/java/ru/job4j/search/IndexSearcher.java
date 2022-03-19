@@ -1,19 +1,26 @@
 package ru.job4j.search;
 
 import java.util.Objects;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveTask;
 
-public class IndexSearcher extends RecursiveTask<Integer> {
-    private final Object[] array;
+public class IndexSearcher<T> extends RecursiveTask<Integer> {
+    private final T[] array;
     private final int begin;
     private final int end;
-    private final Object obj;
+    private final T obj;
 
-    public IndexSearcher(Object[] array, int begin, int end, Object obj) {
+    public IndexSearcher(T[] array, int begin, int end, T obj) {
         this.array = array;
         this.begin = begin;
         this.end = end;
         this.obj = obj;
+    }
+
+    public static <T> int indexOf(T[] array, T obj) {
+        ForkJoinPool pool = new ForkJoinPool();
+        IndexSearcher<T> searcher = new IndexSearcher<>(array, 0, array.length - 1, obj);
+        return pool.invoke(searcher);
     }
 
     @Override
@@ -29,8 +36,8 @@ public class IndexSearcher extends RecursiveTask<Integer> {
             return result;
         }
         int mid = (begin + end) / 2;
-        IndexSearcher searcher1 = new IndexSearcher(array, begin, mid, obj);
-        IndexSearcher searcher2 = new IndexSearcher(array, mid + 1, end, obj);
+        IndexSearcher<T> searcher1 = new IndexSearcher<>(array, begin, mid, obj);
+        IndexSearcher<T> searcher2 = new IndexSearcher<>(array, mid + 1, end, obj);
         searcher1.fork();
         searcher2.fork();
         return Math.max(searcher2.join(), searcher1.join());
